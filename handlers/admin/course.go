@@ -37,13 +37,19 @@ func (h *CourseHandler) HandleCreateCourse(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, utils.FormatValidationErrors(err))
 	}
 
-	// Get the admin's organization ID from the token
+	// Get the admin's information from the token to verify permissions
 	admin, err := middleware.GetUserFromContext(c)
 	if err != nil {
 		return err
 	}
 
-	course, err := h.courseService.CreateCourse(c.Request().Context(), admin.OrganizationID, req)
+	// Verify that the admin has access to the specified organization
+	// This is to prevent admins from creating courses in organizations they don't have access to
+	if admin.OrganizationID != req.OrganizationID {
+		return echo.NewHTTPError(http.StatusForbidden, "You do not have permission to create courses in this organization")
+	}
+
+	course, err := h.courseService.CreateCourse(c.Request().Context(), req.OrganizationID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create course: "+err.Error())
 	}

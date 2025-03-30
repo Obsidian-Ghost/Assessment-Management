@@ -17,7 +17,6 @@ import (
 	"assessment-management-system/handlers/admin"
 	"assessment-management-system/handlers/student"
 	"assessment-management-system/handlers/teacher"
-	"assessment-management-system/middleware"
 	"assessment-management-system/models"
 )
 
@@ -228,6 +227,7 @@ func TestHandleCreateCourse(t *testing.T) {
 			Name:           "Test Course",
 			Description:    "Course description",
 			EnrollmentOpen: false,
+			OrganizationID: "org-id", // Add the organization ID
 		}
 
 		course := &models.Course{
@@ -240,8 +240,8 @@ func TestHandleCreateCourse(t *testing.T) {
 			UpdatedAt:      time.Now(),
 		}
 
-		// Set up expectations
-		mockService.On("CreateCourse", mock.Anything, "org-id", req).Return(course, nil).Once()
+		// Set up expectations - the service now uses the organization ID from the request
+		mockService.On("CreateCourse", mock.Anything, req.OrganizationID, req).Return(course, nil).Once()
 
 		// Create request
 		jsonBody, _ := json.Marshal(req)
@@ -269,12 +269,13 @@ func TestHandleCreateCourse(t *testing.T) {
 		mockService.AssertExpectations(t)
 	})
 
-	t.Run("Invalid Create Course", func(t *testing.T) {
+	t.Run("Invalid Create Course - No Name", func(t *testing.T) {
 		// Invalid request (no name)
 		req := models.CreateCourseRequest{
-			Name:           "",
+			Name:           "", // Name is required
 			Description:    "Course description",
 			EnrollmentOpen: false,
+			OrganizationID: "org-id",
 		}
 
 		// Create request
@@ -295,15 +296,70 @@ func TestHandleCreateCourse(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, httpError.Code)
 	})
 
+	t.Run("Invalid Create Course - No Organization ID", func(t *testing.T) {
+		// Invalid request (no organization ID)
+		req := models.CreateCourseRequest{
+			Name:           "Test Course",
+			Description:    "Course description",
+			EnrollmentOpen: false,
+			OrganizationID: "", // Organization ID is required
+		}
+
+		// Create request
+		jsonBody, _ := json.Marshal(req)
+		httpReq := httptest.NewRequest(http.MethodPost, "/api/admin/courses", bytes.NewReader(jsonBody))
+		httpReq.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(httpReq, rec)
+
+		// Mock the admin user context
+		mockAdminContext(c)
+
+		// Perform the test - should error due to validation
+		err := handler.HandleCreateCourse(c)
+		assert.Error(t, err)
+		httpError, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, httpError.Code)
+	})
+
+	t.Run("Organization Mismatch", func(t *testing.T) {
+		// Request with organization ID different from admin's org
+		req := models.CreateCourseRequest{
+			Name:           "Test Course",
+			Description:    "Course description",
+			EnrollmentOpen: false,
+			OrganizationID: "different-org-id", // Different from admin's org
+		}
+
+		// Create request
+		jsonBody, _ := json.Marshal(req)
+		httpReq := httptest.NewRequest(http.MethodPost, "/api/admin/courses", bytes.NewReader(jsonBody))
+		httpReq.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(httpReq, rec)
+
+		// Mock the admin user context
+		mockAdminContext(c)
+
+		// Perform the test - should error due to org mismatch
+		err := handler.HandleCreateCourse(c)
+		assert.Error(t, err)
+		httpError, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusForbidden, httpError.Code)
+	})
+
 	t.Run("Service Error", func(t *testing.T) {
 		req := models.CreateCourseRequest{
 			Name:           "Test Course",
 			Description:    "Course description",
 			EnrollmentOpen: false,
+			OrganizationID: "org-id",
 		}
 
 		// Service fails
-		mockService.On("CreateCourse", mock.Anything, "org-id", req).Return(nil, errors.New("database error")).Once()
+		mockService.On("CreateCourse", mock.Anything, req.OrganizationID, req).Return(nil, errors.New("database error")).Once()
 
 		// Create request
 		jsonBody, _ := json.Marshal(req)

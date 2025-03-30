@@ -56,6 +56,7 @@ type CreateCourseRequest struct {
 	Name           string `json:"name" validate:"required,min=3,max=255"`
 	Description    string `json:"description"`
 	EnrollmentOpen bool   `json:"enrollment_open"`
+	OrganizationID string `json:"organization_id" validate:"required"`
 }
 
 // UpdateCourseRequest represents the data needed to update a course
