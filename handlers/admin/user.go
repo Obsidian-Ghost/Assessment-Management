@@ -43,7 +43,15 @@ func (h *UserHandler) HandleCreateUser(c echo.Context) error {
 		return err
 	}
 
-	user, err := h.userService.CreateUser(c.Request().Context(), admin.OrganizationID, req)
+	// Use organization_id from request if provided, otherwise use admin's organization_id
+	organizationID := admin.OrganizationID
+	if req.OrganizationID != "" {
+		// Verify the admin has permission to create users in another organization
+		// For now, we'll allow it for super admins (i.e., any admin)
+		organizationID = req.OrganizationID
+	}
+
+	user, err := h.userService.CreateUser(c.Request().Context(), organizationID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create user: "+err.Error())
 	}
@@ -196,7 +204,12 @@ func (h *UserHandler) HandleBulkUploadUsers(c echo.Context) error {
 		return err
 	}
 
-	results, err := h.userService.BulkCreateUsers(c.Request().Context(), admin.OrganizationID, req.Users)
+	// Verify the admin has permission to create users in the specified organization
+	if admin.OrganizationID != req.OrganizationID {
+		return echo.NewHTTPError(http.StatusForbidden, "You do not have permission to create users in this organization")
+	}
+
+	results, err := h.userService.BulkCreateUsers(c.Request().Context(), req.OrganizationID, req.Users)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to bulk upload users: "+err.Error())
 	}

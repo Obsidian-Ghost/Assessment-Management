@@ -76,5 +76,6 @@ type LoginRequest struct {
 
 // BulkUserUploadRequest represents the data format for bulk user upload
 type BulkUserUploadRequest struct {
-	Users []CreateUserRequest `json:"users" validate:"required,min=1,dive"`
+	OrganizationID string              `json:"organization_id" validate:"required"`
+	Users          []CreateUserRequest `json:"users" validate:"required,min=1,dive"`
 }

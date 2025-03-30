@@ -354,39 +354,68 @@ Status Code: 204 No Content
 
 ### Bulk Upload Users
 
-Uploads multiple users from a CSV file.
+Uploads multiple users in a single request.
 
 **Endpoint:** `POST /users/bulk`
 
 **Request Body:**
 
-Multipart form with a `file` field containing a CSV file with the following format:
-```
-first_name,last_name,email,role
-Jane,Doe,jane.doe@example.com,teacher
-John,Smith,john.smith@example.com,student
+```json
+{
+  "organization_id": "92641a7d-966e-4e29-8d52-1d8ea6cac530",
+  "users": [
+    {
+      "email": "jane.doe@example.com",
+      "password": "securepass123",
+      "first_name": "Jane",
+      "last_name": "Doe",
+      "role": "teacher"
+    },
+    {
+      "email": "john.smith@example.com",
+      "password": "securepass123",
+      "first_name": "John",
+      "last_name": "Smith",
+      "role": "student"
+    }
+  ]
+}
 ```
 
 **Response:**
 
-Status Code: 200 OK
+Status Code: 201 Created
 
 ```json
 {
-  "message": "Successfully imported 2 users",
-  "users": [
+  "successful": [
     {
       "id": "9e8d7c6b-5a4b-3c2d-1e0f-9a8b7c6d5e4f",
+      "organization_id": "92641a7d-966e-4e29-8d52-1d8ea6cac530",
       "email": "jane.doe@example.com",
-      "status": "created"
+      "first_name": "Jane",
+      "last_name": "Doe",
+      "role": "teacher",
+      "created_at": "2025-03-29T12:50:45.123456Z",
+      "updated_at": "2025-03-29T12:50:45.123456Z"
     },
     {
       "id": "1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+      "organization_id": "92641a7d-966e-4e29-8d52-1d8ea6cac530",
       "email": "john.smith@example.com",
-      "status": "created"
+      "first_name": "John",
+      "last_name": "Smith",
+      "role": "student",
+      "created_at": "2025-03-29T12:50:45.123456Z",
+      "updated_at": "2025-03-29T12:50:45.123456Z"
     }
   ],
-  "errors": []
+  "failed": [
+    {
+      "email": "existing.user@example.com",
+      "error": "email is already in use"
+    }
+  ]
 }
 ```
 
