@@ -1,2 +1,3 @@
 run:
-	go run main.go
+	@echo Running ...
+	@go run main.go
