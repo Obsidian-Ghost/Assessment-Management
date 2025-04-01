@@ -27,3 +27,5 @@ The system follows a clean architecture pattern with the following layers:
 - **Assessment System** - Create assessments, submit answers, and grade submissions
 - **User Management** - Manage users with different roles
 - **Email Uniqueness** - Ensures global email uniqueness across all organizations
+
+- More Details on "Documentations" Folder.
